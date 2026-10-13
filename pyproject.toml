@@ -75,6 +75,10 @@ dependencies = [
 ]
 
 [dependency-groups]
+plugins = [
+  "icalendar>=7.3.0",
+  "python-dateutil>=2.9.0",
+]
 dev = [
   "commitizen>=4.9.1",
   "pytest>=8.4.1",
@@ -91,6 +95,7 @@ Repository = "https://github.com/AstrBotDevs/AstrBot"
 
 [tool.ruff]
 exclude = ["astrbot/core/utils/t2i/local_strategy.py", "astrbot/api/all.py", "tests"]
+extend-exclude = ["data/plugins/astrbot_plugin_course", "data/plugins/astrbot_plugin_char"]
 line-length = 88
 target-version = "py310"
 

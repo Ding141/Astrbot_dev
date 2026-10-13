@@ -1,4 +1,5 @@
 default_install_hook_types: [pre-commit, prepare-commit-msg]
+exclude: ^data/plugins/(astrbot_plugin_course|astrbot_plugin_char)/
 ci:
   autofix_commit_msg: ":balloon: auto fixes by pre-commit hooks"
   autofix_prs: true

@@ -56,6 +56,8 @@ AstrBot is an open-source all-in-one Agent chatbot platform that integrates with
 
 ## Quick Start
 
+This fork includes two locally maintained plugins and an existing timetable. See the [local plugin development and migration guide](docs/en/dev/local-plugins.md) for Ubuntu development and server deployment.
+
 ### One-Click Cloud Deployment (RainYun)
 
 For users who want one-click 24-hour-online deployment and do not want to manage servers themselves, we recommend RainYun's one-click cloud deployment service ☁️:

@@ -3,7 +3,6 @@ __pycache__
 .mypy_cache
 .venv*
 .conda/
-uv.lock
 .coverage
 
 # IDE and editors
@@ -20,7 +19,35 @@ cookies.json
 # Data files
 data_v2.db
 data_v3.db
-data
+/data/*
+
+# Keep the two locally maintained plugins and the portable timetable in Git.
+!/data/plugins/
+/data/plugins/*
+!/data/plugins/astrbot_plugin_course/
+!/data/plugins/astrbot_plugin_char/
+
+!/data/plugin_data/
+/data/plugin_data/*
+!/data/plugin_data/astrbot_plugin_course/
+/data/plugin_data/astrbot_plugin_course/*
+!/data/plugin_data/astrbot_plugin_course/bindings.json
+!/data/plugin_data/astrbot_plugin_course/ics/
+/data/plugin_data/astrbot_plugin_course/ics/*
+!/data/plugin_data/astrbot_plugin_course/ics/*.ics
+
+# Plugin downloads, credentials, generated images, and nested runtime data.
+/data/plugins/**/.git
+/data/plugins/**/.gitmodules
+/data/plugins/**/.tmp_*
+/data/plugins/**/data/
+/data/plugins/**/cache/
+/data/plugins/**/avatars/
+/data/plugins/**/background_images/
+/data/plugins/**/background_images_tmp/
+/data/plugins/**/backgroundFolder/images/
+/data/plugins/**/backgroundFolder/images_tmp/
+*.py[cod]
 configs/session
 configs/config.yaml
 cmd_config.json

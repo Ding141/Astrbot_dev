@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "updated_at_ts": 1791869196.4460206,
+  "bindings": {
+    "o9cq800aA3JumeR5OB8eM99p_tSQ@im.wechat": {
+      "user_id": "o9cq800aA3JumeR5OB8eM99p_tSQ@im.wechat",
+      "unified_msg_origin": "weixin_test:FriendMessage:o9cq800aA3JumeR5OB8eM99p_tSQ@im.wechat",
+      "nickname": "o9cq800aA3JumeR5OB8eM99p_tSQ@im.wechat",
+      "ics_file": "ics/o9cq800aA3JumeR5OB8eM99p_tSQimwechat.ics",
+      "updated_at_ts": 1791869196.446016,
+      "enable_daily_push": false,
+      "daily_push_time": "07:00",
+      "reminder_advance_minutes": 15,
+      "daily_push_job_id": ""
+    }
+  }
+}
