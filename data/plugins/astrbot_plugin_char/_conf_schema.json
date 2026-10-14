@@ -697,7 +697,7 @@
   },
   "memory": {
     "description": "记忆增强：长期记忆与管理面板",
-    "hint": "常用项是管理员 QQ、记忆面板地址与端口、事件回忆开关，以及记忆注入预算。",
+    "hint": "常用项是额外管理员 UID、记忆面板地址与端口、事件回忆开关，以及记忆注入预算。",
     "type": "object",
     "items": {
       "memory_panel_enabled": {
@@ -707,9 +707,9 @@
         "default": true
       },
       "memory_admin_qq_ids": {
-        "description": "记忆管理员 QQ 列表",
+        "description": "额外记忆管理员 UID 列表",
         "type": "list",
-        "hint": "支持配置多个 QQ，只有这些管理员可以使用 `/记忆`、`/认人`、`/我是谁`、`/记忆面板`；留空表示暂未配置管理员。",
+        "hint": "AstrBot 管理员自动拥有记忆管理权限。此处可额外添加平台 UID（QQ 号或微信 UID），用于 `/记忆`、`/认人`、`/我是谁`、`/记忆面板`；留空时仅允许 AstrBot 管理员。请填写 UID，不要填写 UMO。",
         "default": []
       },
       "memory_panel_auto_start": {

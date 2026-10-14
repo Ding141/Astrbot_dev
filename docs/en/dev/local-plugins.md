@@ -1,6 +1,6 @@
 # Local plugin development and migration
 
-This fork tracks two plugins and the existing timetable for local Ubuntu development and deployment of the same code and selected data to a server.
+This fork tracks the char, course, and Vikunja plugins and the existing timetable. Follow the [personal server guide](../deploy/astrbot/personal-server.md) for deployment, Tailscale access, and operations. That deployment stores application state in `runtime/astrbot`; the `data/` paths below describe running the checkout directly during local development.
 
 ## Tracked files
 
@@ -8,6 +8,7 @@ This fork tracks two plugins and the existing timetable for local Ubuntu develop
 | --- | --- |
 | `data/plugins/astrbot_plugin_course/` | Course plugin, including local attachment imports and WeChat text schedule replies |
 | `data/plugins/astrbot_plugin_char/` | Combined assistant plugin source and static templates, fonts, and assets |
+| `data/plugins/astrbot_plugin_vikunja/` | Vikunja tasks, boards, and WeChat reminders |
 | `data/plugin_data/astrbot_plugin_course/bindings.json` | Existing WeChat timetable binding and reminder settings |
 | `data/plugin_data/astrbot_plugin_course/ics/*.ics` | Complete imported timetable |
 | `pyproject.toml`, `uv.lock` | Core and `plugins` dependency group declarations and locked versions |
@@ -56,7 +57,9 @@ The saved course binding uses platform instance ID `weixin_test`. Preserve that 
 
 Edit the plugin files under `data/plugins/`. Reload the edited plugin in the WebUI, or stop and restart the process. WeChat course queries return text so they do not require the attachment CDN to send images.
 
-Keep `--group plugins` in subsequent uv commands. Some optional combined-plugin features require additional packages such as `akshare`; add dependencies to the `plugins` group when enabling those features.
+Memory and memory-panel commands recognize AstrBot's core administrator list. Enter the UID returned by `/sid`, not the full UMO. The plugin's additional memory administrator UID list (previously the memory administrator QQ list; the key remains `memory_admin_qq_ids`) can also grant access to QQ or WeChat UIDs. An empty list allows only core administrators. Verify access with `/记忆面板 状态` after updating settings.
+
+Keep `--group plugins` in subsequent uv commands. The group includes course dependencies, `akshare`, and Playwright. For local image rendering run `uv run --locked --group plugins playwright install --with-deps chromium`; the server image installs Chromium during its build.
 
 The imported plugins retain their existing style and are excluded from bulk core Ruff and pre-commit checks. Check edited plugin files explicitly, for example:
 
@@ -99,4 +102,4 @@ uv run --locked --no-dev --group plugins main.py
 
 Preserve server-side edits to tracked timetable files before pulling. Do not discard them with `git reset --hard`. A service manager should use the repository root as its working directory and send `SIGINT` for shutdown.
 
-This workflow runs the fork's source checkout. The included `compose.yml` uses an official prebuilt image and does not include this fork's core source modifications.
+This workflow runs the checkout directly. The included `compose.yml` builds this fork's core and Dashboard, stores state in `runtime/`, and also runs Vikunja. Use the [personal server guide](../deploy/astrbot/personal-server.md) on a new server.

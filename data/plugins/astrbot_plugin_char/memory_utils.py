@@ -5,15 +5,16 @@ import re
 import sqlite3
 import threading
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api.star import StarTools
-from .memory_state_store import get_shared_db_path, shared_conn
 
+from .memory_state_store import get_shared_db_path, shared_conn
 
 DEFAULT_ADMIN_QQ_IDS: tuple[str, ...] = ()
 _configured_admin_qq_ids: tuple[str, ...] = DEFAULT_ADMIN_QQ_IDS
@@ -22,6 +23,14 @@ DEFAULT_RELATED_MEMORY_CACHE_TTL_SECONDS = 60
 
 
 def _normalize_admin_qq_ids(raw_value: Any) -> tuple[str, ...]:
+    """Normalize configured administrator UIDs without platform restrictions.
+
+    Args:
+        raw_value: Administrator UIDs as a collection or delimited string.
+
+    Returns:
+        Unique, nonempty UIDs in configuration order.
+    """
     candidates: list[str] = []
     if isinstance(raw_value, (list, tuple, set)):
         iterable = list(raw_value)
@@ -31,7 +40,7 @@ def _normalize_admin_qq_ids(raw_value: Any) -> tuple[str, ...]:
     seen: set[str] = set()
     for item in iterable:
         qq_id = str(item or "").strip()
-        if not qq_id or not qq_id.isdigit() or qq_id in seen:
+        if not qq_id or qq_id in seen:
             continue
         candidates.append(qq_id)
         seen.add(qq_id)
@@ -417,7 +426,17 @@ class UserMemoryStore:
 
     @staticmethod
     def _is_admin_event(event: AstrMessageEvent) -> bool:
-        return UserMemoryStore._safe_sender_id(event) in get_memory_admin_qq_ids()
+        """Allow AstrBot administrators and explicitly configured memory UIDs.
+
+        Args:
+            event: Message event with its role assigned by AstrBot.
+
+        Returns:
+            Whether the sender may use memory administration commands.
+        """
+        return event.is_admin() or (
+            UserMemoryStore._safe_sender_id(event) in get_memory_admin_qq_ids()
+        )
 
     def _get_meta(self, conn: sqlite3.Connection, key: str) -> str:
         row = conn.execute("SELECT value FROM metadata WHERE key = ?", (key,)).fetchone()
@@ -691,7 +710,7 @@ class UserMemoryStore:
                 return
 
             try:
-                with open(self._legacy_json_path, "r", encoding="utf-8") as f:
+                with open(self._legacy_json_path, encoding="utf-8") as f:
                     payload = json.load(f)
             except Exception as exc:
                 logger.warning("加载旧版 JSON 记忆失败: %s", exc)

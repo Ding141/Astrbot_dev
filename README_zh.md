@@ -56,7 +56,7 @@ AstrBot 是一个开源的一站式 Agent 聊天机器人平台，可接入主�
 
 ## 快速开始
 
-本分支包含两个本地维护的插件及已有课表。Ubuntu 本地开发和服务器部署请使用[本地插件开发与迁移指南](docs/zh/dev/local-plugins.md)。
+本分支包含 char、course、Vikunja 三个插件及已有课表。Ubuntu 22.04 服务器上 clone 后执行 `sudo bash scripts/deploy-server.sh`，可部署本分支代码、Vikunja 和三个 Tailscale 私有 HTTPS 入口。完整操作见[个人服务器部署指南](docs/zh/deploy/astrbot/personal-server.md)；本地开发见[本地插件开发与迁移指南](docs/zh/dev/local-plugins.md)。
 
 ### 在雨云上一键部署
 

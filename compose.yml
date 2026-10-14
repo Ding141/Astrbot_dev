@@ -1,20 +1,59 @@
-version: '3.8'
-
-# When connecting to OneBot v11 Napcat, please use this compose file for one-click deployment: https://github.com/NapNeko/NapCat-Docker/blob/main/compose/astrbot.yml
+name: astrbot-personal
 
 services:
   astrbot:
-    image: soulter/astrbot:latest
-    container_name: astrbot
-    restart: always
+    image: astrbot-personal:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    ports:
-      - "6185:6185" # AstrBot WebUI
-      - "6199:6199" # Optional. OneBot v11 Napcat Websocket Port
     environment:
-      - TZ=Asia/Shanghai
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "127.0.0.1:6185:6185"
+      - "127.0.0.1:7835:7835"
     volumes:
-      - ./data:/AstrBot/data
-      # - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
+      - ./runtime/astrbot:/AstrBot/data
+    depends_on:
+      - vikunja
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6185/api/auth/setup-status', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  vikunja:
+    image: vikunja/vikunja:2.7.0
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      VIKUNJA_DATABASE_TYPE: sqlite
+      VIKUNJA_DATABASE_PATH: /db/vikunja.db
+      VIKUNJA_SERVICE_PUBLICURL: ${VIKUNJA_PUBLIC_URL:?Run scripts/deploy-server.sh first}
+      VIKUNJA_SERVICE_SECRET_FILE: /run/secrets/vikunja_secret
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+      VIKUNJA_SERVICE_TIMEZONE: ${TZ:-Asia/Shanghai}
+    ports:
+      - "127.0.0.1:3456:3456"
+    volumes:
+      - ./runtime/vikunja/db:/db
+      - ./runtime/vikunja/files:/app/vikunja/files
+    secrets:
+      - vikunja_secret
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+secrets:
+  vikunja_secret:
+    file: ./runtime/secrets/vikunja_secret

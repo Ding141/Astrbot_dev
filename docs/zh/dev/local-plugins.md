@@ -1,6 +1,6 @@
 # 本地插件开发与迁移
 
-这个分支将两个插件及现有课表纳入 Git，支持在 Ubuntu 本地开发，再将同一份代码和所需数据部署到服务器。
+这个分支将 char、course、Vikunja 三个插件及现有课表纳入 Git，支持在 Ubuntu 本地开发。新服务器的一键部署、Tailscale 访问和运维步骤见[个人服务器部署指南](../deploy/astrbot/personal-server.md)。该部署方式使用 `runtime/astrbot` 保存运行数据；本文以下 `data/` 路径用于本地直接运行。
 
 ## 仓库包含的内容
 
@@ -8,6 +8,7 @@
 | --- | --- |
 | `data/plugins/astrbot_plugin_course/` | 课程插件，包括本地附件导入、微信文字课表和消息处理修复 |
 | `data/plugins/astrbot_plugin_char/` | 综合助手插件的源码及模板、字体等静态资源 |
+| `data/plugins/astrbot_plugin_vikunja/` | Vikunja 任务管理、看板和微信提醒插件 |
 | `data/plugin_data/astrbot_plugin_course/bindings.json` | 当前微信账号的课表绑定和提醒设置 |
 | `data/plugin_data/astrbot_plugin_course/ics/*.ics` | 已导入的完整课表 |
 | `pyproject.toml`、`uv.lock` | 核心及 `plugins` 依赖组的版本声明和锁定结果 |
@@ -56,7 +57,9 @@ rsync -a --exclude='.git/' --exclude='.venv*/' --exclude='node_modules/' \
 
 直接编辑 `data/plugins/` 中对应插件文件。在 WebUI 的插件页面重载所修改的插件，或按 `Ctrl+C` 后重新执行启动命令。微信的今日、明日、本周、下周查询返回文字，避免课表图片依赖微信附件 CDN。
 
-课程插件的依赖已加入 `plugins` 组，后续继续使用带 `--group plugins` 的命令。综合插件部分可选能力需要额外依赖，例如股票/基金使用的 `akshare`；当前基线没有安装这些可选依赖，开启对应功能时再安装并在 `plugins` 组中记录。
+记忆和记忆面板权限认可 AstrBot 核心管理员列表，填写 `/sid` 返回的 UID 即可，不能填写完整 UMO。综合插件配置中的“额外记忆管理员 UID 列表”（原“记忆管理员 QQ 列表”，配置键仍为 `memory_admin_qq_ids`）用于额外授权，可填写 QQ 号或微信 UID；留空时仅允许 AstrBot 管理员。修改管理员或插件配置后，可用 `/记忆面板 状态` 验证权限。
+
+课程插件依赖、股票/基金使用的 `akshare` 和图片渲染使用的 Playwright 已加入 `plugins` 组，继续使用带 `--group plugins` 的命令。本地需要图片渲染时执行 `uv run --locked --group plugins playwright install --with-deps chromium`；服务器镜像构建会完成此步骤。
 
 第三方插件保留原有代码格式，核心的 Ruff 和 pre-commit 批量检查排除这两个目录。修改插件后，可对修改的文件显式运行检查，例如：
 
@@ -99,4 +102,4 @@ uv run --locked --no-dev --group plugins main.py
 
 如果服务器上修改了已跟踪的课表或绑定，先保存这些更改，再拉取代码。不要用 `git reset --hard` 清掉运行中的课表设置。长期运行时，可将最后一条启动命令交给现有服务管理器，并将工作目录设置为仓库根目录；停止信号使用 `SIGINT`，让 AstrBot 完成收尾。
 
-本流程部署的是当前仓库源码。仓库自带的 `compose.yml` 使用官方预构建镜像；直接运行它不会包含本分支对核心源码的修改。
+本流程直接运行当前仓库源码。仓库的 `compose.yml` 则由部署脚本构建本分支核心和 Dashboard，使用独立 `runtime/` 目录并同时运行 Vikunja；新服务器请按[个人服务器部署指南](../deploy/astrbot/personal-server.md)操作。

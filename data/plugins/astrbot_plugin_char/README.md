@@ -85,7 +85,7 @@ pip install aiohttp aiofiles pillow akshare pandas apscheduler
 
 | 配置组 | 关键项 | 用途 |
 | --- | --- | --- |
-| `memory` | `memory_admin_qq_ids` | 记忆、记忆面板、管理员能力的权限控制 |
+| `memory` | `memory_admin_qq_ids` | 额外记忆管理员 UID；AstrBot 管理员自动拥有记忆和记忆面板权限 |
 | `memory` | `memory_panel_*` | 记忆面板开关、监听地址、端口、外网地址 |
 | `slang` | `slang_enabled` 等 | 黑话学习与注入控制 |
 | `weather` | `weather_*` | 天气数据源与返回格式 |
@@ -179,6 +179,7 @@ pip install aiohttp aiofiles pillow akshare pandas apscheduler
 说明：
 
 - 永久记忆命令、记忆面板启动/关闭仅管理员可用；面板网页默认不需要 token，能连到端口的人都能查看和编辑。
+- 记忆权限认可 AstrBot 核心管理员列表；`memory_admin_qq_ids` 保留原配置键名，可额外填写 QQ 号或微信 UID。微信管理员使用 `/sid` 返回的 UID，不能填写完整 UMO。
 - 普通聊天进入模型前，会自动按当前 QQ 注入长期记忆。
 - 普通聊天还会额外注入“会话态势”，让 bot 更清楚最近这段时间在聊什么、你现在在忙什么、它上轮答应过什么。
 - 普通聊天也会自动提炼“任务线程”，记录你最近在推进什么、下一步是什么、是否已经完成。

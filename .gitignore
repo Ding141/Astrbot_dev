@@ -21,11 +21,12 @@ data_v2.db
 data_v3.db
 /data/*
 
-# Keep the two locally maintained plugins and the portable timetable in Git.
+# Keep the locally maintained plugins and the portable timetable in Git.
 !/data/plugins/
 /data/plugins/*
 !/data/plugins/astrbot_plugin_course/
 !/data/plugins/astrbot_plugin_char/
+!/data/plugins/astrbot_plugin_vikunja/
 
 !/data/plugin_data/
 /data/plugin_data/*
@@ -92,3 +93,10 @@ GenieData/
 .worktrees/
 
 dashboard/bun.lock
+
+# Private server configuration, runtime state, and backups.
+.env
+.env.*
+!.env.example
+/runtime/
+/backups/
