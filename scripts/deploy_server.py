@@ -27,12 +27,17 @@ def check_server(root: Path) -> str:
     Raises:
         RuntimeError: Required sources, connectivity, or service ownership are invalid.
         subprocess.CalledProcessError: A host inspection command fails.
+        subprocess.TimeoutExpired: A host inspection exceeds 30 seconds.
     """
     for plugin in PLUGINS:
         if not (root / "data" / "plugins" / plugin / "main.py").is_file():
             raise RuntimeError(f"Missing plugin source: {plugin}. Check the checkout.")
     status_result = subprocess.run(
-        ["tailscale", "status", "--json"], capture_output=True, text=True
+        ["tailscale", "status", "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     status = json.loads(status_result.stdout)
     if status.get("BackendState") != "Running":
@@ -56,6 +61,7 @@ def check_server(root: Path) -> str:
         check=True,
         capture_output=True,
         text=True,
+        timeout=30,
     ).stdout.split()
     own_ports = set()
     if ids:
@@ -71,6 +77,7 @@ def check_server(root: Path) -> str:
             check=True,
             capture_output=True,
             text=True,
+            timeout=30,
         )
         for line in containers.stdout.splitlines():
             container = json.loads(line)
@@ -101,6 +108,7 @@ def check_server(root: Path) -> str:
             check=True,
             capture_output=True,
             text=True,
+            timeout=30,
         ).stdout
     )
     for foreground in (config.get("Foreground") or {}).values():
@@ -266,6 +274,6 @@ if __name__ == "__main__":
             print(check_server(root))
         else:
             prepare_server(root, args.dns_name)
-    except (RuntimeError, ValueError, OSError, subprocess.CalledProcessError) as error:
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as error:
         print(f"Deployment preparation failed: {error}", file=sys.stderr)
         sys.exit(1)

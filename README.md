@@ -56,7 +56,7 @@ AstrBot is an open-source all-in-one Agent chatbot platform that integrates with
 
 ## Quick Start
 
-This fork includes the char, course, and Vikunja plugins and an existing timetable. After cloning on Ubuntu 22.04, run `sudo bash scripts/deploy-server.sh` to deploy this fork, Vikunja, and three private Tailscale HTTPS endpoints. Follow the [personal server guide](docs/en/deploy/astrbot/personal-server.md) for complete instructions and the [local plugin guide](docs/en/dev/local-plugins.md) for development.
+This fork includes the char, course, and Vikunja plugins and an existing timetable. After cloning on Ubuntu 22.04, run `sudo bash scripts/deploy-server.sh` to deploy this fork, Vikunja, and three private Tailscale HTTPS endpoints. Add `--cn` for Chinese package mirrors; on a freshly installed server, run `--cn --install-only` first, then configure image acceleration and Tailscale. Follow the [personal server guide](docs/en/deploy/astrbot/personal-server.md) for complete instructions and the [local plugin guide](docs/en/dev/local-plugins.md) for development.
 
 ### One-Click Cloud Deployment (RainYun)
 

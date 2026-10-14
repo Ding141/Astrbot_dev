@@ -167,6 +167,7 @@ def host_commands(monkeypatch, checkout):
         Returns:
             A completed subprocess result.
         """
+        assert kwargs["timeout"] == 30
         if command[:2] == ["tailscale", "status"]:
             output = json.dumps(
                 {"BackendState": host["state"], "Self": {"DNSName": DNS_NAME + "."}}
@@ -270,6 +271,27 @@ def test_disconnected_tailscale_and_missing_plugin_are_refused(checkout, host_co
         deploy_server.check_server(checkout)
 
 
+def test_host_inspection_timeout_does_not_initialize_runtime(checkout, monkeypatch):
+    def stalled_command(command, **kwargs):
+        """Simulate a daemon that does not respond within the inspection limit.
+
+        Args:
+            command: Host inspection command.
+            **kwargs: Subprocess execution options.
+
+        Raises:
+            subprocess.TimeoutExpired: The simulated daemon does not respond.
+        """
+        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+    monkeypatch.setattr(deploy_server.subprocess, "run", stalled_command)
+    with pytest.raises(subprocess.TimeoutExpired) as error:
+        deploy_server.check_server(checkout)
+    assert error.value.timeout == 30
+    assert not (checkout / "runtime").exists()
+    assert not (checkout / ".env").exists()
+
+
 def test_memory_panel_http_requires_current_token():
     from data.plugins.astrbot_plugin_char.memory_panel_utils import MemoryPanelManager
 
@@ -342,7 +364,20 @@ state = json.loads(state_path.read_text())
 tool, args = Path(sys.argv[0]).name, sys.argv[1:]
 state["calls"].append([tool, *args])
 if tool == "docker" and args and args[0] == "compose":
-    args = ["compose", *args[9:]] if args[1:2] == ["--project-name"] else args
+    position = 1
+    while position < len(args) and args[position].startswith("--"):
+        option = args[position]
+        position += 1 if "=" in option else 2
+    args = ["compose", *args[position:]]
+    if args[1:2] == ["build"]:
+        state["build_environment"] = {
+            name: os.environ.get(name, "")
+            for name in (
+                "PYPI_INDEX_URL", "NPM_REGISTRY", "DEBIAN_MIRROR",
+                "DEBIAN_SECURITY_MIRROR", "PLAYWRIGHT_DOWNLOAD_HOST",
+                "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT",
+            )
+        }
 code = 0
 if tool == "id":
     print("0")
@@ -357,6 +392,8 @@ elif tool == "docker":
     elif args[0] == "inspect":
         print(json.dumps({"labels": {"com.docker.compose.project.working_dir": state["root"]}, "running": state.get("running", False), "ports": {"6185/tcp": [{"HostPort": "6185"}], "7835/tcp": [{"HostPort": "7835"}], "3456/tcp": [{"HostPort": "3456"}]}}))
     elif args[:2] == ["compose", "build"] and state.get("fail_build"):
+        code = 1
+    elif args[:2] == ["compose", "pull"] and state.get("fail_pull"):
         code = 1
     elif args[:2] == ["compose", "stop"]:
         state["running"] = False
@@ -387,7 +424,87 @@ sys.exit(code)
         "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
         "ASTRBOT_INSTALLER_TEST_STATE": str(state_file),
     }
+    for name in (
+        "PYPI_INDEX_URL",
+        "NPM_REGISTRY",
+        "DEBIAN_MIRROR",
+        "DEBIAN_SECURITY_MIRROR",
+        "PLAYWRIGHT_DOWNLOAD_HOST",
+        "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT",
+    ):
+        env.pop(name, None)
     return checkout, env, state_file
+
+
+@pytest.mark.parametrize("options", [["--install-only"], ["--cn", "--install-only"]])
+def test_install_only_does_not_initialize_or_start_applications(
+    installer_host, options
+):
+    root, env, state_file = installer_host
+    result = subprocess.run(
+        ["bash", str(root / "scripts" / "deploy-server.sh"), *options],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Deployment completed" not in result.stdout
+    assert not (root / "runtime").exists()
+    assert not (root / ".env").exists()
+    calls = json.loads(state_file.read_text())["calls"]
+    assert not any(
+        call[:2] == ["docker", "compose"]
+        and any(stage in call for stage in ("build", "pull", "stop", "up"))
+        for call in calls
+    )
+    assert not any(
+        call[:2] in (["tailscale", "up"], ["tailscale", "serve"]) for call in calls
+    )
+
+
+def test_invalid_installer_option_is_refused_before_host_changes(installer_host):
+    root, env, state_file = installer_host
+    result = subprocess.run(
+        ["bash", str(root / "scripts" / "deploy-server.sh"), "--mistyped-option"],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode != 0
+    assert not (root / "runtime").exists()
+    assert not (root / ".env").exists()
+    assert not json.loads(state_file.read_text())["calls"]
+
+
+def test_cn_mirrors_reach_the_build_without_becoming_runtime_configuration(
+    installer_host,
+):
+    root, env, state_file = installer_host
+    result = subprocess.run(
+        ["bash", str(root / "scripts" / "deploy-server.sh"), "--cn"],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 0, result.stderr
+    build_environment = json.loads(state_file.read_text())["build_environment"]
+    assert build_environment == {
+        "PYPI_INDEX_URL": "https://pypi.tuna.tsinghua.edu.cn/simple",
+        "NPM_REGISTRY": "https://registry.npmmirror.com",
+        "DEBIAN_MIRROR": "https://mirrors.tuna.tsinghua.edu.cn/debian",
+        "DEBIAN_SECURITY_MIRROR": "https://mirrors.tuna.tsinghua.edu.cn/debian-security",
+        "PLAYWRIGHT_DOWNLOAD_HOST": "",
+        "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT": "",
+    }
+    assert "mirrors." not in (root / ".env").read_text()
+    assert set(json.loads(state_file.read_text())["serve"]["TCP"]) == {
+        "443",
+        "8443",
+        "8444",
+    }
 
 
 def test_installer_repeats_without_resetting_state(installer_host):
@@ -409,10 +526,13 @@ def test_installer_repeats_without_resetting_state(installer_host):
     assert before.strip().decode() not in result.stdout
 
 
-def test_failed_build_does_not_stop_services_or_publish_routes(installer_host):
+@pytest.mark.parametrize("failed_stage", ["build", "pull"])
+def test_failed_download_or_build_does_not_stop_services_or_publish_routes(
+    installer_host, failed_stage
+):
     root, env, state_file = installer_host
     state = json.loads(state_file.read_text())
-    state["fail_build"] = True
+    state[f"fail_{failed_stage}"] = True
     state_file.write_text(json.dumps(state))
     result = subprocess.run(
         ["bash", str(root / "scripts" / "deploy-server.sh")],
@@ -424,7 +544,8 @@ def test_failed_build_does_not_stop_services_or_publish_routes(installer_host):
     assert "Deployment completed" not in result.stdout
     state = json.loads(state_file.read_text())
     assert any(
-        call[:2] == ["docker", "compose"] and "build" in call for call in state["calls"]
+        call[:2] == ["docker", "compose"] and failed_stage in call
+        for call in state["calls"]
     )
     assert not any(
         call[:2] == ["docker", "compose"] and "stop" in call for call in state["calls"]
