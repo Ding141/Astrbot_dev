@@ -12,6 +12,23 @@ sudo apt-get update
 sudo apt-get install -y git
 ```
 
+### Reuse an existing server
+
+A working Ubuntu 22.04 server with Docker Engine 28+, Compose, and a logged-in Tailscale client can be reused without reinstalling the system or these tools. On a roughly 4 GB server without swap, the initial source build may run short of memory; adding swap before building can help.
+
+If you have decided to discard the old `personal-assistant-astrbot` deployment, remove its two containers and disable only its old HTTPS 443 route:
+
+```bash
+sudo docker rm -f personal-assistant-astrbot-astrbot-1 personal-assistant-astrbot-assistant-api-1
+sudo tailscale serve --https=443 off
+sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+sudo tailscale serve status
+```
+
+Keep the existing HTTPS 8443 route when it proxies to `http://127.0.0.1:6185`; the new Dashboard uses the same backend. The deployment script will recreate HTTPS 443 for Vikunja at `127.0.0.1:3456` and add the memory panel route. See [Tailscale Serve commands](https://tailscale.com/docs/reference/tailscale-cli/serve).
+
+Removing containers keeps the old bind-mounted directories and volumes. Do not run Docker prune commands or `tailscale serve reset`. Old application data is not automatically imported into the new `runtime/` directory; configure the new instance as described below.
+
 Use an existing repository SSH key or create a read-only GitHub deploy key:
 
 ```bash

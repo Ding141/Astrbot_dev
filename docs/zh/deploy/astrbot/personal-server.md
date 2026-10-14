@@ -26,6 +26,25 @@ sudo apt-get install -y git
 
 云安全组保留 SSH 登录所需规则，不开放 TCP 3456、6185、7835、443、8443、8444。Tailscale 使用自己的网络入口，Serve 的 HTTPS 端口只对 tailnet 提供服务。脚本不会调整安全组、防火墙或销毁已有服务器。重建前如需旧服务数据，请先完成备份。
 
+### 沿用已有服务器
+
+已有 Ubuntu 22.04、Docker Engine 28+、Compose 和正常登录的 Tailscale 时，直接复用环境。无需为了本项目重新购买或重装服务器。约 4 GB 内存且没有 swap 时，首次构建前先停止旧业务服务；构建内存仍不足时可增加 swap。
+
+如果此前运行的是 `personal-assistant-astrbot` 旧方案，并且已决定废弃旧服务，在**服务器上**执行以下命令。先核对容器名与路由用途；这会停止并删除两个旧业务容器，旧网页与机器人随即停止服务：
+
+```bash
+sudo docker rm -f \
+  personal-assistant-astrbot-astrbot-1 \
+  personal-assistant-astrbot-assistant-api-1
+sudo tailscale serve --https=443 off
+sudo docker ps
+sudo tailscale serve status
+```
+
+旧 `443 → 127.0.0.1:8080` 路由需要释放，新部署会设置为 Vikunja 的 `443 → 127.0.0.1:3456`。已有的 `8443 → 127.0.0.1:6185` 可以保留复用。按端口关闭旧入口即可，避免 `tailscale serve reset` 清除其他路由。[Serve 命令说明](https://tailscale.com/docs/reference/tailscale-cli/serve)
+
+这些命令保留系统、SSH、Docker、Tailscale 登录与设备信息，也保留旧容器挂载在宿主机的目录；不清理其他容器或 Docker 数据卷。旧目录里的模型密钥、微信登录态和数据库不会自动导入新的 `runtime/`。后续从本仓库部署并重新配置账号，不要再次启动旧 Compose 项目。Tailscale 设备审批与访问策略仍需按第 4 节核对。
+
 ## 2. clone 私有仓库
 
 服务器已有能访问该仓库的 SSH 密钥时，直接使用。否则创建只用于读取仓库的密钥：
